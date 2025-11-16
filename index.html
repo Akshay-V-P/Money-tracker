@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .slide-up {
+            animation: slideUp 0.4s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #10b981;
+        }
+        
+        .progress-bar {
+            transition: width 0.6s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-black text-white min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <div class="mb-12 fade-in">
+            <h1 class="text-4xl font-bold mb-2 bg-gradient-to-r from-green-400 to-emerald-600 bg-clip-text text-transparent">Money Tracker</h1>
+            <p class="text-gray-400">Track your savings goals and achieve financial freedom</p>
+        </div>
+
+        <!-- Add Target Button -->
+        <div class="mb-8 fade-in">
+            <button onclick="showAddTargetModal()" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg">
+                + Add New Target
+            </button>
+        </div>
+
+        <!-- Targets Grid -->
+        <div id="targetsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            <!-- Target cards will be dynamically added here -->
+        </div>
+
+        <!-- Add Target Modal -->
+        <div id="addTargetModal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+            <div class="bg-gray-900 rounded-2xl p-8 max-w-md w-full border border-gray-800 slide-up">
+                <h2 class="text-2xl font-bold mb-6">Create New Target</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Target Name</label>
+                        <input type="text" id="targetName" placeholder="e.g., Emergency Fund" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Target Amount (₹)</label>
+                        <input type="number" id="targetAmount" placeholder="1000" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500">
+                    </div>
+                    <div class="flex gap-3 mt-6">
+                        <button onclick="addTarget()" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-all">
+                            Create Target
+                        </button>
+                        <button onclick="closeAddTargetModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold transition-all">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Savings Modal -->
+        <div id="addSavingsModal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+            <div class="bg-gray-900 rounded-2xl p-8 max-w-md w-full border border-gray-800 slide-up">
+                <h2 class="text-2xl font-bold mb-6">Add Savings</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Amount (₹)</label>
+                        <input type="number" id="savingsAmount" placeholder="50" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500">
+                    </div>
+                    <div class="flex gap-3 mt-6">
+                        <button onclick="addSavings()" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-all">
+                            Add Savings
+                        </button>
+                        <button onclick="closeAddSavingsModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold transition-all">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart Modal -->
+        <div id="chartModal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+            <div class="bg-gray-900 rounded-2xl p-8 max-w-4xl w-full border border-gray-800 slide-up">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold" id="chartTitle">Savings Progress</h2>
+                    <button onclick="closeChartModal()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+                </div>
+                <canvas id="savingsChart" class="w-full" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let targets = [];
+        let currentTargetId = null;
+        let chartInstance = null;
+
+        // Load targets from localStorage
+        function loadTargets() {
+            try {
+                const stored = localStorage.getItem('moneyTrackerTargets');
+                if (stored) {
+                    targets = JSON.parse(stored);
+                    console.log('Loaded targets from localStorage:', targets);
+                } else {
+                    targets = [];
+                }
+            } catch (error) {
+                console.error('Error loading from localStorage:', error);
+                targets = [];
+            }
+            renderTargets();
+        }
+
+        // Save targets to localStorage
+        function saveTargets() {
+            try {
+                localStorage.setItem('moneyTrackerTargets', JSON.stringify(targets));
+                console.log('Saved targets to localStorage:', targets);
+            } catch (error) {
+                console.error('Error saving to localStorage:', error);
+                alert('Failed to save data. Your storage might be full.');
+            }
+        }
+
+        // Show add target modal
+        function showAddTargetModal() {
+            document.getElementById('addTargetModal').classList.remove('hidden');
+        }
+
+        // Close add target modal
+        function closeAddTargetModal() {
+            document.getElementById('addTargetModal').classList.add('hidden');
+            document.getElementById('targetName').value = '';
+            document.getElementById('targetAmount').value = '';
+        }
+
+        // Add new target
+        function addTarget() {
+            const name = document.getElementById('targetName').value;
+            const amount = parseFloat(document.getElementById('targetAmount').value);
+            
+            if (!name || !amount || amount <= 0) {
+                alert('Please enter valid target name and amount');
+                return;
+            }
+
+            const target = {
+                id: Date.now(),
+                name: name,
+                targetAmount: amount,
+                savedAmount: 0,
+                history: []
+            };
+
+            targets.push(target);
+            saveTargets();
+            renderTargets();
+            closeAddTargetModal();
+        }
+
+        // Show add savings modal
+        function showAddSavingsModal(targetId) {
+            currentTargetId = targetId;
+            document.getElementById('addSavingsModal').classList.remove('hidden');
+        }
+
+        // Close add savings modal
+        function closeAddSavingsModal() {
+            document.getElementById('addSavingsModal').classList.add('hidden');
+            document.getElementById('savingsAmount').value = '';
+            currentTargetId = null;
+        }
+
+        // Add savings to target
+        function addSavings() {
+            const amount = parseFloat(document.getElementById('savingsAmount').value);
+            
+            if (!amount || amount <= 0) {
+                alert('Please enter a valid amount');
+                return;
+            }
+
+            const target = targets.find(t => t.id === currentTargetId);
+            if (target) {
+                target.savedAmount += amount;
+                target.history.push({
+                    date: new Date().toISOString(),
+                    amount: amount
+                });
+                saveTargets();
+                renderTargets();
+                closeAddSavingsModal();
+            }
+        }
+
+        // Delete target
+        function deleteTarget(targetId) {
+            if (confirm('Are you sure you want to delete this target?')) {
+                targets = targets.filter(t => t.id !== targetId);
+                saveTargets();
+                renderTargets();
+            }
+        }
+
+        // Show chart modal
+        function showChart(targetId) {
+            const target = targets.find(t => t.id === targetId);
+            if (!target) return;
+
+            document.getElementById('chartTitle').textContent = `${target.name} - Progress`;
+            document.getElementById('chartModal').classList.remove('hidden');
+
+            const ctx = document.getElementById('savingsChart').getContext('2d');
+            
+            // Destroy previous chart if exists
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            // Prepare data
+            const labels = target.history.map((h, i) => `Day ${i + 1}`);
+            const data = target.history.map(h => h.amount);
+            const cumulativeData = [];
+            let sum = 0;
+            target.history.forEach(h => {
+                sum += h.amount;
+                cumulativeData.push(sum);
+            });
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels.length > 0 ? labels : ['No data'],
+                    datasets: [{
+                        label: 'Cumulative Savings',
+                        data: cumulativeData.length > 0 ? cumulativeData : [0],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'Target Amount',
+                        data: Array(labels.length || 1).fill(target.targetAmount),
+                        borderColor: '#ef4444',
+                        borderDash: [5, 5],
+                        tension: 0,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#fff'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#9ca3af',
+                                callback: function(value) {
+                                    return '₹' + value;
+                                }
+                            },
+                            grid: {
+                                color: '#374151'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#9ca3af'
+                            },
+                            grid: {
+                                color: '#374151'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Close chart modal
+        function closeChartModal() {
+            document.getElementById('chartModal').classList.add('hidden');
+            if (chartInstance) {
+                chartInstance.destroy();
+                chartInstance = null;
+            }
+        }
+
+        // Render all targets
+        function renderTargets() {
+            const container = document.getElementById('targetsContainer');
+            
+            if (targets.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-16 text-gray-500">
+                        <p class="text-xl mb-2">No targets yet</p>
+                        <p class="text-sm">Click "Add New Target" to get started</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = targets.map(target => {
+                const progress = Math.min((target.savedAmount / target.targetAmount) * 100, 100);
+                const remaining = Math.max(target.targetAmount - target.savedAmount, 0);
+                
+                return `
+                    <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800 card-hover slide-up">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-xl font-bold mb-1">${target.name}</h3>
+                                <p class="text-gray-400 text-sm">${target.history.length} deposits</p>
+                            </div>
+                            <button onclick="deleteTarget(${target.id})" class="text-gray-500 hover:text-red-500 transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="flex justify-between text-sm mb-2">
+                                <span class="text-gray-400">Progress</span>
+                                <span class="font-semibold">${progress.toFixed(1)}%</span>
+                            </div>
+                            <div class="w-full bg-gray-800 rounded-full h-3 overflow-hidden">
+                                <div class="progress-bar bg-gradient-to-r from-green-500 to-emerald-600 h-full rounded-full" style="width: ${progress}%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <p class="text-gray-400 text-xs mb-1">Saved</p>
+                                <p class="text-2xl font-bold text-green-500">₹${target.savedAmount.toFixed(2)}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-400 text-xs mb-1">Target</p>
+                                <p class="text-2xl font-bold">₹${target.targetAmount.toFixed(2)}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <p class="text-gray-400 text-xs mb-1">Remaining</p>
+                            <p class="text-lg font-semibold text-gray-300">₹${remaining.toFixed(2)}</p>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <button onclick="showAddSavingsModal(${target.id})" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-medium transition-all">
+                                Add Savings
+                            </button>
+                            <button onclick="showChart(${target.id})" class="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-all">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Initialize app
+        loadTargets();
+    </script>
+</body>
+</html>
