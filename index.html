@@ -115,6 +115,30 @@
             </div>
         </div>
 
+        <!-- Withdraw Savings Modal -->
+        <div id="withdrawSavingsModal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+            <div class="bg-gray-900 rounded-2xl p-8 max-w-md w-full border border-gray-800 slide-up">
+                <h2 class="text-2xl font-bold mb-6">Withdraw Money</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Amount (₹)</label>
+                        <input type="number" id="withdrawAmount" placeholder="25" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500">
+                    </div>
+                    <div class="bg-yellow-900 bg-opacity-30 border border-yellow-800 rounded-lg p-3">
+                        <p class="text-yellow-400 text-sm">⚠️ This will deduct money from your saved amount</p>
+                    </div>
+                    <div class="flex gap-3 mt-6">
+                        <button onclick="withdrawSavings()" class="flex-1 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition-all">
+                            Withdraw
+                        </button>
+                        <button onclick="closeWithdrawSavingsModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold transition-all">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Chart Modal -->
         <div id="chartModal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
             <div class="bg-gray-900 rounded-2xl p-8 max-w-4xl w-full border border-gray-800 slide-up">
@@ -209,6 +233,47 @@
             currentTargetId = null;
         }
 
+        // Show withdraw savings modal
+        function showWithdrawSavingsModal(targetId) {
+            currentTargetId = targetId;
+            document.getElementById('withdrawSavingsModal').classList.remove('hidden');
+        }
+
+        // Close withdraw savings modal
+        function closeWithdrawSavingsModal() {
+            document.getElementById('withdrawSavingsModal').classList.add('hidden');
+            document.getElementById('withdrawAmount').value = '';
+            currentTargetId = null;
+        }
+
+        // Withdraw savings from target
+        function withdrawSavings() {
+            const amount = parseFloat(document.getElementById('withdrawAmount').value);
+            
+            if (!amount || amount <= 0) {
+                alert('Please enter a valid amount');
+                return;
+            }
+
+            const target = targets.find(t => t.id === currentTargetId);
+            if (target) {
+                if (amount > target.savedAmount) {
+                    alert(`Cannot withdraw ${amount.toFixed(2)}. You only have ${target.savedAmount.toFixed(2)} saved.`);
+                    return;
+                }
+                
+                target.savedAmount -= amount;
+                target.history.push({
+                    date: new Date().toISOString(),
+                    amount: -amount,
+                    type: 'withdrawal'
+                });
+                saveTargets();
+                renderTargets();
+                closeWithdrawSavingsModal();
+            }
+        }
+
         // Add savings to target
         function addSavings() {
             const amount = parseFloat(document.getElementById('savingsAmount').value);
@@ -223,7 +288,8 @@
                 target.savedAmount += amount;
                 target.history.push({
                     date: new Date().toISOString(),
-                    amount: amount
+                    amount: amount,
+                    type: 'deposit'
                 });
                 saveTargets();
                 renderTargets();
@@ -257,7 +323,9 @@
 
             // Prepare data
             const labels = target.history.map((h, i) => `Day ${i + 1}`);
-            const data = target.history.map(h => h.amount);
+            const deposits = target.history.filter(h => h.type !== 'withdrawal');
+            const withdrawals = target.history.filter(h => h.type === 'withdrawal');
+            
             const cumulativeData = [];
             let sum = 0;
             target.history.forEach(h => {
@@ -389,7 +457,10 @@
                         
                         <div class="flex gap-2">
                             <button onclick="showAddSavingsModal(${target.id})" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-medium transition-all">
-                                Add Savings
+                                + Add
+                            </button>
+                            <button onclick="showWithdrawSavingsModal(${target.id})" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-medium transition-all">
+                                - Withdraw
                             </button>
                             <button onclick="showChart(${target.id})" class="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-all">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
